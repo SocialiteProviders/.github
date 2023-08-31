@@ -1,0 +1,71 @@
+name: Close all open pull-requests for this organization
+
+on:
+  schedule:
+    - cron: * * * * *
+
+jobs:
+  close:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/github-script@v6
+        with:
+          script: |
+            const query = `
+              {
+                search(query: "org:socialiteproviders is:pr state:open", type: ISSUE, first: 100) {
+                  issueCount
+                    edges {
+                      node {
+                      ... on PullRequest {
+                        number
+                        repository {
+                          hasIssuesEnabled
+                          name
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            try {
+              console.log(`Retrieving all open pull-requests for this organization...`);
+
+              const result = await github.graphql(query);
+
+              console.log(JSON.stringify(result, null, 2));
+
+              const pullRequests = result.search.edges
+                .filter(edge => edge.node.repository.hasIssuesEnabled == true)
+                .map(edge => edge.node);
+
+              if (pullRequests.length === 0) {
+                console.log('No open pull-request found with this organization sub-tree');
+
+                return;
+              }
+
+              for (const pullRequest of pullRequests) {
+                const payload = {
+                  issue_number: pullRequest.number,
+                  owner: 'socialiteproviders',
+                  repo: pullRequest.repository.name,
+                }
+
+                await github.rest.issues.createComment({
+                  ...payload,
+                  body: "This repository is a **READ ONLY** subtree split from [SocialiteProviders/Providers](https://github.com/SocialiteProviders/Providers).\n\nPlease open a PR against [SocialiteProviders/Providers](https://github.com/SocialiteProviders/Providers). "
+                });
+
+                # await github.rest.pulls.update({
+                #   ...payload,
+                #   state: "closed"
+                # });
+              }
+            } catch(e) {
+              console.log(e);
+            }
+`
