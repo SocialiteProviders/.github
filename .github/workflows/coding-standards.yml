@@ -5,26 +5,30 @@ on:
     inputs:
       php:
         default: "8.1"
+        description: The PHP version to use
         type: string
-        required: false
       message:
         default: Fix code styling
+        description: The commit message to use
         type: string
-        required: false
+      fix:
+        default: true
+        description: Whether to fix the code styling
+        type: boolean
 
 jobs:
   lint:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout the code
         uses: actions/checkout@v3
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ inputs.php }}
-          extensions: curl, dom, json, libxml, mbstring
+          extensions: json, dom, curl, libxml, mbstring
           coverage: none
 
       - name: Install Pint
@@ -34,6 +38,7 @@ jobs:
         run: pint
 
       - name: Commit linted files
+        if: ${{ inputs.fix }}
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: ${{ inputs.message }}
