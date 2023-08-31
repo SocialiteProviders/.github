@@ -1,4 +1,4 @@
-name: Pull Requests
+name: Modifiable pull Requests
 
 on:
   workflow_call:
@@ -12,7 +12,7 @@ jobs:
         with:
           script: |
             const repo = context.repo.repo;
-          
+
             const query = `
               query($number: Int!) {
                 repository(owner: "SocialiteProviders", name: "${repo}") {
